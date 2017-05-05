@@ -17,7 +17,7 @@ def tex_function_for_a(ka, a) :
 
 # funzione prende una successione di bytes e una chiave ka intera
 # ritorna una sequenza di bytes della stessa dimensione di input
-def reverse_tex_funtion_for_a(ka, a):
+def reverse_tex_function_for_a(ka, a):
     # conversione da bytes in int e in int bin string
     ba = (bin(int.from_bytes(a, byteorder='big'))[2:]).zfill(DIM_CHUNK)
     ba = ba[-DIM_CHUNK:]
@@ -29,7 +29,7 @@ def reverse_tex_funtion_for_a(ka, a):
 # funzione prende un intero e una chiave kb
 # trasforma l'intero in binario e fa r_shift per kb pos
 # kb deve essere intero viene fatto il modulo per portarlo a max 63
-def tex_funtion_for_b (kb, b):
+def tex_function_for_b(kb, b):
     # conversione da bytes in int e in int bin string
     bb = (bin(int.from_bytes(b, byteorder='big'))[2:]).zfill(DIM_CHUNK)
     bb = bb[-DIM_CHUNK:]
@@ -39,7 +39,7 @@ def tex_funtion_for_b (kb, b):
     return int(bb, 2).to_bytes(len(bb) // 8, byteorder='big')
 
 # stessa cosa per function b
-def reverse_tex_funtion_for_b (kb, b):
+def reverse_tex_function_for_b (kb, b):
     # conversione da bytes in int e in int bin string
     bb = (bin(int.from_bytes(b, byteorder='big'))[2:]).zfill(DIM_CHUNK)
     ba = bb[-DIM_CHUNK:]
@@ -48,16 +48,37 @@ def reverse_tex_funtion_for_b (kb, b):
     # riconversione da string bin in int a bytes
     return int(bb, 2).to_bytes(len(bb) // 8, byteorder='big')
 
+
+# algoritmo per calcolare l'md5
 def get_md5(path):
     md5 = hashlib.md5()
-    tot_size = os.stat(path).st_size
-    tot_read = 0
     with open(path,'rb') as f:
-        while tot_read < tot_size:
-            data = f.read(1024)
+        data = f.read(1024)
+        while data:
             md5.update(data)
-            tot_read += len(data)
+            data = f.read(1024)
+
     return md5.hexdigest()
+
+## metodo per inviare un file attraverso una socket
+def send_file (sock, file_path):
+    ## legge il file e lo invia un po' per volta
+    with open(file_path, 'rb') as f:
+        data = f.read(1024)
+        while data:
+            sock.send(data)
+            data = f.read(1024)
+
+## metodo per ricevere le informazioni da una socket
+## e le scrive in un file
+def recv_file(sock, file_path, size_tot):
+    ## scrive sul file indicato
+    with open(file_path, 'wb') as f:
+        read_tot = 0
+        while read_tot < size_tot:
+            data = sock.recv(1024)
+            f.write(data)
+            read_tot += len(data)
 
 
 # questa funzione genera un array di chiavi
@@ -84,13 +105,13 @@ if __name__ == '__main__':
     ma = tex_function_for_a(ka, c)
     print(ma, ' chunk con func a e ka')
 
-    mb = tex_funtion_for_b(kb, ma)
+    mb = tex_function_for_b(kb, ma)
     print(mb, ' chunck con func b e kb')
 
-    ma1 = reverse_tex_funtion_for_a(ka, mb)
+    ma1 = reverse_tex_function_for_a(ka, mb)
     print(ma1 , ' reverse func a e ka')
 
-    orig = reverse_tex_funtion_for_b(kb, ma1)
+    orig = reverse_tex_function_for_b(kb, ma1)
     print(orig, ' original reverse func b e kb')
 
 
