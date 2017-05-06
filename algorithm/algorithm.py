@@ -2,7 +2,13 @@ import  random
 import  hashlib
 import os
 
-DIM_CHUNK = 8 * 8
+## variabili di protocolli
+DIM_MD5 = 32
+DIM_PADD = 5
+DIM_SIZE = 10
+
+DIM_CHUNK_BYTE = 2048
+DIM_CHUNK = DIM_CHUNK_BYTE * 8
 
 # funzione prende una successione di bytes e una chiave ka intera
 # ritorna una sequenza di bytes della stessa dimensione di input
@@ -86,11 +92,11 @@ def recv_file(sock, file_path, size_tot):
 def generate_keys(num_keys):
     keys = []
     for i in range(num_keys):
-        keys.append(random.randrange(0, 2**(DIM_CHUNK // 8)))
+        keys.append(random.randrange(0, DIM_CHUNK))
     return keys
 
 def generate_key():
-    return random.randrange(0, 2**(DIM_CHUNK // 8))
+    return random.randrange(0, DIM_CHUNK)
 
 # main di prova vario
 if __name__ == '__main__':
