@@ -25,11 +25,11 @@ if __name__ == '__main__' :
     sock.connect((IP_DEST, DEST_PORT))
 
     ## calcolo del totale dei chunk da inviare
-    num_chunk = os.stat(ORIG_FILE).st_size // (algorithm.DIM_CHUNK // 8)
+    num_chunk = os.stat(ORIG_FILE).st_size // algorithm.DIM_CHUNK_BYTE
     # verifico se e' necessario aggiunger e un padding
-    if os.stat(ORIG_FILE).st_size % (algorithm.DIM_CHUNK // 8) != 0:
+    if os.stat(ORIG_FILE).st_size % algorithm.DIM_CHUNK_BYTE != 0:
         num_chunk = num_chunk + 1
-        size_tot = num_chunk * ((algorithm.DIM_CHUNK // 8))
+        size_tot = num_chunk * (algorithm.DIM_CHUNK_BYTE)
         padding =  size_tot - os.stat(ORIG_FILE).st_size
 
     # invio md5 originale, padd, e dimensione originale
@@ -42,9 +42,9 @@ if __name__ == '__main__' :
     orig_file = open(ORIG_FILE, 'rb')
     for i in range(0, num_chunk):
 
-        chunk = orig_file.read(algorithm.DIM_CHUNK // 8)        ## leggo gli 8 bytes
+        chunk = orig_file.read(algorithm.DIM_CHUNK_BYTE)      ## leggo gli 8 bytes
         ## verifica se necessario aggiungere il padding al file
-        if len(chunk) < (algorithm.DIM_CHUNK // 8):
+        if len(chunk) < algorithm.DIM_CHUNK_BYTE:
             chunk += bytes(padding)
 
         ka = algorithm.generate_key()                           ## genera la chiave valida per il chunk letto
@@ -54,7 +54,7 @@ if __name__ == '__main__' :
         sock.send(chunk_a)
         print('invio del chunk_a ', i)
         ## ricevo il chunk cifrato con a_b
-        chunk_ab = sock.recv(algorithm.DIM_CHUNK // 8)
+        chunk_ab = sock.recv(algorithm.DIM_CHUNK_BYTE)
         print('ricevuto il chunk_ab ', i)
         ## decifra il chunk
         chunk_b = algorithm.reverse_tex_function_for_a(ka, chunk_ab)

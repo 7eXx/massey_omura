@@ -27,7 +27,7 @@ if __name__ == '__main__':
     md5_orig = client_sock.recv(algorithm.DIM_MD5).decode()
     padding = int(client_sock.recv(algorithm.DIM_PADD).decode())
     num_chunk = int(client_sock.recv(algorithm.DIM_SIZE).decode())
-    size_tot = num_chunk * (algorithm.DIM_CHUNK // 8)
+    size_tot = num_chunk * (algorithm.DIM_CHUNK_BYTE)
     print('md5 ', md5_orig, ', padd ', padding, ', size_tot ', size_tot, ', num_chunk ', num_chunk)
 
     ## ciclo per ricevere ed elaborare tutti i chunk
@@ -37,16 +37,16 @@ if __name__ == '__main__':
         kb = algorithm.generate_key()       ## generazione della chiave di B per tutta l'elaborazione
 
         ## ricezione del chunk da A
-        chunk_a = client_sock.recv(algorithm.DIM_CHUNK//8)
+        chunk_a = client_sock.recv(algorithm.DIM_CHUNK_BYTE)
         print('ricevuto il chunk_a ', i)
         ## cifratura del chunk con chiave di B
         chunk_ab = algorithm.tex_function_for_b(kb, chunk_a)
-        print('cifraggio con chiave A ', kb)
+        print('cifraggio con chiave B ', kb)
         ## reinvio del chunk con chiave A e B
         client_sock.send(chunk_ab)
         print('invio del chunk_ab ', i)
         ## ricezione del chunk senza chiave A
-        chunk_b = client_sock.recv(algorithm.DIM_CHUNK // 8)
+        chunk_b = client_sock.recv(algorithm.DIM_CHUNK_BYTE)
         print('ricevuto il chunk_b ',i)
         ## decifratura del chunk con chiave B
         new_chunk = algorithm.reverse_tex_function_for_b(kb, chunk_b)
