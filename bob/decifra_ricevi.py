@@ -92,6 +92,9 @@ if __name__ == '__main__':
     ## applicazione decifraggio con chiavi di B
     decypher_file_b(CRIPT_FILE_B, FINAL_FILE, padd, keys_b)
 
+
+    client_sock.close()
+
     md5_new = algorithm.get_md5(FINAL_FILE)
 
     print('md5 originale = ' + md5_orig)

@@ -101,4 +101,5 @@ if __name__ == '__main__' :
     ## reinvia il file cifrato solo con B
     algorithm.send_file(sock, CRIPT_FILE_B)
 
+    sock.close()
 
