@@ -89,6 +89,9 @@ def generate_keys(num_keys):
         keys.append(random.randrange(0, 2**(DIM_CHUNK // 8)))
     return keys
 
+def generate_key():
+    return random.randrange(0, 2**(DIM_CHUNK // 8))
+
 # main di prova vario
 if __name__ == '__main__':
 

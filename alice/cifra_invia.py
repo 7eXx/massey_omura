@@ -3,7 +3,7 @@ import os
 import socket
 
 
-IP_DEST = "192.168.0.140"
+IP_DEST = "192.168.0.144"
 DEST_PORT = 12345
 
 ORIG_FILE = 'f22_raptor.jpg'
@@ -64,41 +64,59 @@ def decypher_file_a(orig_file, dest_file, padding, keys_a):
     print('dimensione file iniziale: ', dim_file, 'bytes')
     print('dimensione file finale: ', read_bytes, 'bytes')
 
+## questa variante sfrutta solamente una chiave alla volta
+## infatti se invio un chunk alla volta non c'e' bisogno di ricordarsi
+## ogni volta tutte le chiavi. viene cifrato e decifrato un byte alla volta
+## secondo lo schema riportato sugli appunti
 if __name__ == '__main__' :
 
     md5_orig = algorithm.get_md5(ORIG_FILE)
+    padding = 0
+    size_tot = 0
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((IP_DEST, DEST_PORT))
 
-    # generazione delle chiavi per a size / 8 byte
-    num_keys_a = os.stat(ORIG_FILE).st_size // (algorithm.DIM_CHUNK // 8)
-    # controllo se c'e' resto allora si ha una chiave in piu'
-    if os.stat(ORIG_FILE).st_size % algorithm.DIM_CHUNK != 0:
-        num_keys_a += 1
-
-    ## genero le chiavi di A utilizzate uno per ogni chunk
-    keys_a = algorithm.generate_keys(num_keys_a)
-    ## cifratura del file, salvataggio su file output e ritorno del padding calcolato
-    padd = cypher_file_a(ORIG_FILE, CRIPT_FILE_A, keys_a)
-    size_tot = os.stat(CRIPT_FILE_A).st_size
+    ## calcolo del totale dei chunk da inviare
+    num_chunk = os.stat(ORIG_FILE).st_size // (algorithm.DIM_CHUNK // 8)
+    # verifico se e' necessario aggiunger e un padding
+    if os.stat(ORIG_FILE).st_size % (algorithm.DIM_CHUNK // 8) != 0:
+        num_chunk = num_chunk + 1
+        size_tot = num_chunk * ((algorithm.DIM_CHUNK // 8))
+        padding =  size_tot - os.stat(ORIG_FILE).st_size
 
     # invio md5 originale, padd, e dimensione originale
     sock.send(md5_orig.encode())
-    sock.send(str(padd).encode())
-    sock.send(str(size_tot).zfill(20).encode())
-    print('md5 ', md5_orig, ', padd ', padd, ', size_tot ', size_tot)
+    sock.send(str(padding).encode())
+    sock.send(str(num_chunk).zfill(10).encode())
+    print('md5 ', md5_orig, ', padd ', padding, ', size_tot ', size_tot, ', num_chunk ', num_chunk)
 
-    # invio del file criptato con le key A
-    algorithm.send_file(sock, CRIPT_FILE_A)
+    # ciclo che cifra con A, invia un chunk, decifra con A e reinvia
+    orig_file = open(ORIG_FILE, 'rb')
+    for i in range(num_chunk):
 
-    # ricevo il file cifrato dall akey di
-    algorithm.recv_file(sock, CRIPT_FILE_AB, size_tot)
+        chunk = orig_file.read(algorithm.DIM_CHUNK // 8)        ## leggo gli 8 bytes
+        ## verifica se necessario aggiungere il padding al file
+        if len(chunk) < (algorithm.DIM_CHUNK // 8):
+            chunk += bytes(padding)
 
-    ## decifratura da file in a out secondo un padding dato e chiavi calcolate
-    decypher_file_a(CRIPT_FILE_AB, CRIPT_FILE_B, padd, keys_a)
+        ka = algorithm.generate_key()                           ## genera la chiave valida per il chunk letto
+        chunk_a = algorithm.tex_function_for_a(ka, chunk)       ## cifratura del chunk
 
-    ## reinvia il file cifrato solo con B
-    algorithm.send_file(sock, CRIPT_FILE_B)
+        ## invio del chunk cifrato con chiave a
+        sock.send(chunk_a)
+        ## ricevo il chunk cifrato con a_b
+        chunk_ab = sock.recv(algorithm.DIM_CHUNK // 8)
+        ## decifra il chunk
+        chunk_b = algorithm.reverse_tex_function_for_a(ka, chunk_ab)
+        ## reinvio del chunk senza la chiave ma solo con quella di b
+        sock.send(chunk_b)
+
+    ## chiusura del file e del socket
+    orig_file.close()
+    sock.close()
+
+
+
 
 

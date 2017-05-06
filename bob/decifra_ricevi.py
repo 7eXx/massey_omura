@@ -2,7 +2,7 @@ from algorithm import  algorithm
 import os
 import socket
 
-IP_SERVER = "192.168.0.140"
+IP_SERVER = "192.168.0.144"
 PORT_SERVER = 12345
 
 CRIPT_FILE_A = 'cripted_f22_a.jpg'
@@ -70,13 +70,46 @@ if __name__ == '__main__':
 
     ## ricevo md5 orig, padd eventuale e size totale
     md5_orig = client_sock.recv(32).decode()
-    padd = int(client_sock.recv(1).decode())
-    size_tot = int(client_sock.recv(20).decode())
-    print('md5 ', md5_orig, ', padd ', padd , ', size_tot ', size_tot)
+    padding = int(client_sock.recv(1).decode())
+    num_chunk = int(client_sock.recv(10).decode())
+    size_tot = num_chunk * (algorithm.DIM_CHUNK // 8)
+    print('md5 ', md5_orig, ', padd ', padding, ', size_tot ', size_tot, ', num_chunk ', num_chunk)
+
+    ## ciclo per ricevere ed elaborare tutti i chunk
+    f_out = open(FINAL_FILE, 'wb')
+    for i in range(num_chunk):
+
+        kb = algorithm.generate_key()       ## generazione della chiave di B per tutta l'elaborazione
+
+        ## ricezione del chunk da A
+        chunk_a = client_sock.recv(algorithm.DIM_CHUNK//8)
+        ## cifratura del chunk con chiave di B
+        chunk_ab = algorithm.tex_function_for_b(kb, chunk_a)
+        ## reinvio del chunk con chiave A e B
+        client_sock.send(chunk_ab)
+        ## ricezione del chunk senza chiave A
+        chunk_b = client_sock.recv(algorithm.DIM_CHUNK // 8)
+        ## decifratura del chunk con chiave B
+        new_chunk = algorithm.reverse_tex_function_for_b(kb, chunk_b)
+
+        ## verifica se ultimo chunk necessita del padding
+        if i+1 == num_chunk:
+            f_out.write(new_chunk[:-padding])
+        else:
+            f_out.write(new_chunk)
+
+
+    client_sock.close()
+    f_out.close()
+
+    md5_new = algorithm.get_md5(FINAL_FILE)
+
+    print('md5 originale = ' + md5_orig)
+    print('md5 vecchio = ' + md5_new)
 
 
     ## ricevo il file cifrato da A
-    algorithm.recv_file(client_sock, CRIPT_FILE_A, size_tot)
+    algorithm.recv_file(client_sock, CRIPT_FILE_A, num_chunk)
 
     ## creo le chiavi per b
     num_keys_b = os.stat(CRIPT_FILE_A).st_size // (algorithm.DIM_CHUNK // 8)
@@ -87,15 +120,12 @@ if __name__ == '__main__':
     algorithm.send_file(client_sock, CRIPT_FILE_AB)
 
     ## riceve il file solo con criptaggio della chiave B
-    algorithm.recv_file(client_sock, CRIPT_FILE_B, size_tot)
+    algorithm.recv_file(client_sock, CRIPT_FILE_B, num_chunk)
 
     ## applicazione decifraggio con chiavi di B
-    decypher_file_b(CRIPT_FILE_B, FINAL_FILE, padd, keys_b)
+    decypher_file_b(CRIPT_FILE_B, FINAL_FILE, padding, keys_b)
 
-    md5_new = algorithm.get_md5(FINAL_FILE)
 
-    print('md5 originale = ' + md5_orig)
-    print('md5 vecchio = ' + md5_new)
 
 
 
