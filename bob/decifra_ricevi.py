@@ -2,7 +2,7 @@ from algorithm import  algorithm
 import os
 import socket
 
-IP_SERVER = "192.168.0.144"
+IP_SERVER = "192.168.0.192"
 PORT_SERVER = 12345
 
 CRIPT_FILE_A = 'cripted_f22_a.jpg'
@@ -29,10 +29,12 @@ if __name__ == '__main__':
     num_chunk = int(client_sock.recv(algorithm.DIM_SIZE).decode())
     size_tot = num_chunk * (algorithm.DIM_CHUNK_BYTE)
     print('md5 ', md5_orig, ', padd ', padding, ', size_tot ', size_tot, ', num_chunk ', num_chunk)
+    client_sock.close()
 
     ## ciclo per ricevere ed elaborare tutti i chunk
     f_out = open(FINAL_FILE, 'wb')
     for i in range(0, num_chunk):
+        (client_sock, address) = serversocket.accept()
 
         kb = algorithm.generate_key()       ## generazione della chiave di B per tutta l'elaborazione
 
@@ -43,7 +45,7 @@ if __name__ == '__main__':
         chunk_ab = algorithm.tex_function_for_b(kb, chunk_a)
         print('cifraggio con chiave B ', kb)
         ## reinvio del chunk con chiave A e B
-        client_sock.send(chunk_ab)
+        client_sock.sendall(chunk_ab)
         print('invio del chunk_ab ', i)
         ## ricezione del chunk senza chiave A
         chunk_b = client_sock.recv(algorithm.DIM_CHUNK_BYTE)
@@ -57,9 +59,10 @@ if __name__ == '__main__':
         else:
             f_out.write(new_chunk)
 
+        client_sock.close()
 
-    client_sock.close()
     f_out.close()
+    serversocket.close()
 
     md5_new = algorithm.get_md5(FINAL_FILE)
 
