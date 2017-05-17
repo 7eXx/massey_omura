@@ -3,7 +3,7 @@ import os
 import socket
 
 
-IP_DEST = "192.168.0.144"
+IP_DEST = "192.168.0.192"
 DEST_PORT = 12345
 
 ORIG_FILE = 'f22_raptor.jpg'
@@ -38,9 +38,13 @@ if __name__ == '__main__' :
     sock.send(str(num_chunk).zfill(algorithm.DIM_SIZE).encode())
     print('md5 ', md5_orig, ', padd ', padding, ', size_tot ', size_tot, ', num_chunk ', num_chunk)
 
+    sock.close()
+
     # ciclo che cifra con A, invia un chunk, decifra con A e reinvia
     orig_file = open(ORIG_FILE, 'rb')
     for i in range(0, num_chunk):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((IP_DEST, DEST_PORT))
 
         chunk = orig_file.read(algorithm.DIM_CHUNK_BYTE)      ## leggo gli 8 bytes
         ## verifica se necessario aggiungere il padding al file
@@ -51,7 +55,7 @@ if __name__ == '__main__' :
         chunk_a = algorithm.tex_function_for_a(ka, chunk)       ## cifratura del chunk
         print('cifraggio con chiave A ', ka)
         ## invio del chunk cifrato con chiave a
-        sock.send(chunk_a)
+        sock.sendall(chunk_a)
         print('invio del chunk_a ', i)
         ## ricevo il chunk cifrato con a_b
         chunk_ab = sock.recv(algorithm.DIM_CHUNK_BYTE)
@@ -59,9 +63,9 @@ if __name__ == '__main__' :
         ## decifra il chunk
         chunk_b = algorithm.reverse_tex_function_for_a(ka, chunk_ab)
         ## reinvio del chunk senza la chiave ma solo con quella di b
-        sock.send(chunk_b)
+        sock.sendall(chunk_b)
         print('invio del chunk_b ', i)
+        sock.close()
 
     ## chiusura del file e del socket
     orig_file.close()
-    sock.close()
